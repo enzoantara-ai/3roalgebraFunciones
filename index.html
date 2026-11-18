@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detectives de funciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap">
+<style>
+:root{--paper:#FBFAF3;--grid:#CFE3F2;--ink:#1B3A6B;--text:#1F2937;--ok:#1E7B3A;--okbg:#E3F4E6;--bad:#B3261E;--badbg:#FCE8E6;--mark:#FFE97A;--line:#B9C7D6}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);background-color:var(--paper);
+background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+main{max-width:680px;margin:0 auto;padding:28px 18px 48px}
+h1,h2{font-family:Kalam,"Comic Sans MS",cursive;color:var(--ink);margin:0}
+h1{font-size:clamp(2rem,7vw,3rem);line-height:1.1}
+h1 span{background:linear-gradient(transparent 55%,var(--mark) 55%)}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:22px;margin-top:20px;box-shadow:5px 5px 0 var(--ink)}
+.m{font-family:"Cambria Math",Cambria,"Times New Roman",serif;font-size:1.12em}
+.btn{font:inherit;font-weight:700;background:var(--ink);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:11px 22px;cursor:pointer}
+.btn:hover{background:#25508f}
+.btn.ghost{background:transparent;color:var(--ink)}
+button:focus-visible{outline:3px solid #E08A00;outline-offset:2px}
+.bar{height:10px;background:#fff;border:2px solid var(--ink);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ink);transition:width .3s}
+.top{display:flex;justify-content:space-between;font-weight:700;color:var(--ink);margin-bottom:8px}
+.q{font-size:1.15rem;margin:16px 0}
+.opts{display:grid;gap:10px}
+.opt{font:inherit;text-align:left;display:flex;gap:12px;align-items:baseline;background:#fff;border:2px solid var(--line);border-radius:8px;padding:11px 14px;cursor:pointer;color:var(--text)}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt b{color:var(--ink);min-width:1.2em}
+.opt.ok{border-color:var(--ok);background:var(--okbg)}
+.opt.bad{border-color:var(--bad);background:var(--badbg)}
+.opt:disabled{cursor:default}
+.fb{margin-top:16px;padding:12px 14px;border-left:6px solid;border-radius:4px}
+.fb.ok{border-color:var(--ok);background:var(--okbg)}
+.fb.bad{border-color:var(--bad);background:var(--badbg)}
+.fb strong{display:block}
+.hide{display:none}
+.score{font-family:Kalam,cursive;font-size:4rem;color:var(--ink);line-height:1}
+ul{padding-left:20px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Detectives de <span>funciones</span></h1>
+
+  <section id="start" class="card">
+    <h2>¿Eres capaz de reconocer una función?</h2>
+    <p>Son 10 preguntas sobre pares ordenados, funciones, dominio y rango. Después de cada respuesta verás por qué es correcta o incorrecta. Puedes jugar todas las veces que quieras: las preguntas y las opciones cambian de orden cada vez.</p>
+    <p>Ten a mano lápiz y papel para resolver.</p>
+    <button class="btn" id="go">Empezar</button>
+  </section>
+
+  <section id="play" class="card hide">
+    <div class="top"><span id="num"></span><span id="pts"></span></div>
+    <div class="bar" aria-hidden="true"><i id="fill"></i></div>
+    <p class="q m" id="qtext"></p>
+    <div class="opts" id="opts"></div>
+    <div id="fb" class="fb hide" role="status"></div>
+    <p><button class="btn hide" id="next"></button></p>
+  </section>
+
+  <section id="end" class="card hide">
+    <h2>Resultado</h2>
+    <div class="score" id="final"></div>
+    <p id="msg"></p>
+    <div id="review"></div>
+    <button class="btn" id="again">Jugar de nuevo</button>
+  </section>
+</main>
+
+<script>
+// Cada pregunta: texto, opciones (la primera es la correcta) y explicación.
+const QUESTIONS = [
+ {q:"¿Cuál de estos conjuntos de pares ordenados SÍ es una función?",
+  o:["{(1; 4), (2; 4), (3; 4)}","{(1; 4), (1; 5), (2; 6)}","{(2; 3), (5; 1), (2; 0)}","{(0; 1), (3; 2), (0; 7)}"],
+  e:"Repetir la segunda componente (el 4) está permitido. Lo que no puede pasar es que una primera componente tenga dos imágenes distintas, como el 1, el 2 o el 0 en las otras opciones."},
+ {q:"Si los pares ordenados (x + y; 3) y (5; x − y) son iguales, ¿cuánto vale x² + y²?",
+  o:["17","13","15","25"],
+  e:"Igualando componentes: x + y = 5 y x − y = 3. Sumando, 2x = 8, entonces x = 4 y y = 1. Luego x² + y² = 16 + 1 = 17."},
+ {q:"El conjunto f = {(a + b; 2b), (5; 4)} es unitario (tiene un solo elemento). ¿Cuánto vale √(a − b)?",
+  o:["1","0","2","3"],
+  e:"Los dos pares deben ser el mismo: a + b = 5 y 2b = 4. Entonces b = 2 y a = 3. √(a − b) = √1 = 1."},
+ {q:"¿Es función g = {(−4; 5), (1; −1), (−√16; 8)}?",
+  o:["No: como −√16 = −4, el −4 tiene dos imágenes (5 y 8).","Sí: todas las segundas componentes son distintas.","Sí: todas las primeras componentes se ven distintas.","No: porque tiene números negativos."],
+  e:"Hay que simplificar antes de decidir. −√16 = −4, así que (−4; 5) y (−4; 8) comparten la primera componente con imágenes distintas. No cumple la condición de unicidad."},
+ {q:"Sea f = {(2; 1), (4; 3), (1; 5), (3; 0), (7; 7)}. ¿Cuál es Dom(f) ∩ Ran(f)?",
+  o:["{1; 3; 7}","{2; 4; 1; 3; 7}","{1; 3; 5; 0; 7}","{1; 3}"],
+  e:"Dom(f) = {2; 4; 1; 3; 7} (primeras componentes) y Ran(f) = {1; 3; 5; 0; 7} (segundas componentes). Lo que tienen en común es {1; 3; 7}."},
+ {q:"Sea f = {(2; 5), (−1; 5), (9; 3), (2; m), (−1; n)} una función. ¿Cuál es su rango?",
+  o:["{5; 3}","{9; 3}","{−1; 3}","{2; 3}"],
+  e:"El 2 se repite como primera componente, entonces m = 5. El −1 también se repite, entonces n = 5. El rango es el conjunto de las segundas componentes sin repetir: {5; 3}."},
+ {q:"f = {(3; 5), (2a − 3; 2), (10; a)} es una función y la suma de los elementos de su dominio es 18. ¿Cuál es su rango?",
+  o:["{2; 5; 4}","{3; 5; 10}","{5; 2; −4}","{2; 5; 10}"],
+  e:"3 + (2a − 3) + 10 = 18 → 2a = 8 → a = 4. Entonces f = {(3; 5), (5; 2), (10; 4)} y su rango es {5; 2; 4}."},
+ {q:"Se define g = {(x; y) / y = x² + 1} con Dom(g) = {−2; 3; 1}. ¿Cuál es Ran(g)?",
+  o:["{5; 10; 2}","{5; 9; 2}","{−2; 3; 1}","{5; 10; 1}"],
+  e:"Reemplazando: x = −2 → (−2)² + 1 = 5; x = 3 → 3² + 1 = 10; x = 1 → 1² + 1 = 2. Ran(g) = {5; 10; 2}."},
+ {q:"F = {(2; 3), (3; a − b), (2; a + b), (3; 1)} representa una función. ¿Cuánto vale ab?",
+  o:["2","1","3","6"],
+  e:"El 2 se repite: a + b = 3. El 3 se repite: a − b = 1. Resolviendo, a = 2 y b = 1, entonces ab = 2."},
+ {q:"En un diagrama sagital de f: A → B, con A = {4; 3}, el 4 llega a a + 3 y el 3 llega a a − 4 y también a 6. ¿Cuál es el conjunto de llegada?",
+  o:["{13; 6}","{13; 7}","{6; 4}","{13; 6; 3}"],
+  e:"Como f es función, las dos llegadas del 3 son iguales: a − 4 = 6, entonces a = 10. Así a + 3 = 13 y el conjunto de llegada es {13; 6}."}
+];
+
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const L = ["A", "B", "C", "D"];
+let order, idx, score, missed, answered;
+
+function show(id){ ["start","play","end"].forEach(s => $(s).classList.toggle("hide", s !== id)); }
+
+function start(){
+  order = shuffle(QUESTIONS); idx = 0; score = 0; missed = [];
+  show("play"); render();
+}
+
+function render(){
+  const item = order[idx]; answered = false;
+  $("num").textContent = "Pregunta " + (idx + 1) + " de " + order.length;
+  $("pts").textContent = "Aciertos: " + score;
+  $("fill").style.width = (idx / order.length * 100) + "%";
+  $("qtext").textContent = item.q;
+  $("fb").className = "fb hide"; $("next").className = "btn hide";
+  const box = $("opts"); box.innerHTML = "";
+  shuffle(item.o.map((t, i) => ({t, ok: i === 0}))).forEach((op, k) => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.dataset.ok = op.ok;
+    b.innerHTML = "<b>" + L[k] + ")</b><span class='m'></span>";
+    b.lastChild.textContent = op.t;
+    b.onclick = () => choose(b, item);
+    box.appendChild(b);
+  });
+}
+
+function choose(btn, item){
+  if (answered) return; answered = true;
+  const right = btn.dataset.ok === "true";
+  document.querySelectorAll(".opt").forEach(b => {
+    b.disabled = true;
+    if (b.dataset.ok === "true") b.classList.add("ok");
+  });
+  if (right) score++; else { btn.classList.add("bad"); missed.push(item); }
+  $("pts").textContent = "Aciertos: " + score;
+  const fb = $("fb");
+  fb.className = "fb " + (right ? "ok" : "bad");
+  fb.innerHTML = "<strong>" + (right ? "✓ ¡Correcto!" : "✗ Casi. La respuesta correcta está marcada en verde.") + "</strong>";
+  const p = document.createElement("span"); p.textContent = item.e; fb.appendChild(p);
+  const n = $("next"); n.textContent = idx === order.length - 1 ? "Ver resultado" : "Siguiente pregunta";
+  n.className = "btn"; n.focus();
+}
+
+function finish(){
+  show("end");
+  $("final").textContent = score + " / " + order.length;
+  $("msg").textContent = score === 10 ? "¡Perfecto! Eres un verdadero detective de funciones."
+    : score >= 7 ? "¡Muy bien! Repasa las que fallaste y vuelve a intentarlo para llegar a 10."
+    : score >= 4 ? "Vas por buen camino. Lee las explicaciones y juega de nuevo: ¡mejorarás!"
+    : "Esto recién empieza. Revisa la condición de unicidad (una primera componente, una sola imagen) y vuelve a jugar.";
+  const r = $("review"); r.innerHTML = "";
+  if (missed.length){
+    r.innerHTML = "<p><strong>Para repasar:</strong></p>";
+    const ul = document.createElement("ul");
+    missed.forEach(m => { const li = document.createElement("li"); li.textContent = m.e; ul.appendChild(li); });
+    r.appendChild(ul);
+  }
+}
+
+$("go").onclick = start;
+$("again").onclick = start;
+$("next").onclick = () => { idx++; idx < order.length ? render() : finish(); };
+</script>
+</body>
+</html>
